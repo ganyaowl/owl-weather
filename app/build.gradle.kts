@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.dagger.hilt.android")
+    kotlin("kapt")
 }
 
 android {
@@ -50,6 +52,30 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    // Coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    // Hilt
+    implementation("com.google.dagger:hilt-android:2.47")
+    kapt("com.google.dagger:hilt-compiler:2.47")
+    // Retrofit + Moshi + OkHttp
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-moshi:2.9.0")
+    implementation("com.squareup.okhttp3:okhttp:4.11.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+    implementation("com.squareup.moshi:moshi:1.15.0")
+    implementation("com.squareup.moshi:moshi-kotlin:1.15.0")
+    // Room
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    kapt("androidx.room:room-compiler:2.6.1")
+    // DataStore
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
+    // Play services location
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+    // Maps Compose (optional, requires API key at runtime)
+    implementation("com.google.maps.android:maps-compose:2.14.0")
+    // Timber
+    implementation("com.jakewharton.timber:timber:5.0.1")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
