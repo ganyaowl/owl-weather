@@ -32,5 +32,3 @@ Notes & next steps:
 - `CitiesScreen`, `MapScreen` and full CRUD UI are placeholders; repository & DB are implemented and ready for UI wiring.
 - Add Google Maps API key to enable map screen.
 - Implement better error handling, animations and weather icon mapping.
-
-*** End of README
