@@ -89,18 +89,7 @@ Android-приложение прогноза погоды на Kotlin + Jetpack
 
 Если ключ не добавлен, экран карты показывает понятную инструкцию и ссылку на docs.
 
-## 6. Какие скриншоты сделать для защиты
-
-1. Splash экран.
-2. Main: текущая погода и 7-дневный прогноз.
-3. Main без разрешения локации (fallback на выбранный город).
-4. Cities: поиск + результаты geocoding.
-5. Cities: список сохраненных городов с CRUD.
-6. City details: погода конкретного города.
-7. Map с маркерами (или экран инструкции без ключа).
-8. Демонстрация offline/fallback (отключить интернет и показать данные).
-
-## 7. Важные файлы
+## 6. Важные файлы
 
 - `app/src/main/java/com/example/oweather/navigation/WeatherApp.kt`
 - `app/src/main/java/com/example/oweather/presentation/main/MainScreen.kt`
