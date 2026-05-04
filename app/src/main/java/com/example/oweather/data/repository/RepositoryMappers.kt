@@ -59,13 +59,15 @@ fun ForecastResponse.toDomain(
     cityName: String,
     source: ForecastSource
 ): WeatherForecast? {
-    val current = currentWeather ?: return null
+    val currentTemperature = current?.temperature ?: currentWeather?.temperature ?: return null
+    val currentWindSpeed = current?.windSpeed ?: currentWeather?.windspeed ?: return null
+    val currentWeatherCode = current?.weatherCode ?: currentWeather?.weathercode ?: return null
     val dailyDto = daily
 
     val dates = dailyDto?.time.orEmpty()
     val maxValues = dailyDto?.temperatureMax.orEmpty()
     val minValues = dailyDto?.temperatureMin.orEmpty()
-    val codes = dailyDto?.weathercode.orEmpty()
+    val codes = dailyDto?.weatherCode ?: dailyDto?.weathercode.orEmpty()
 
     val size = listOf(dates.size, maxValues.size, minValues.size, codes.size).minOrNull() ?: 0
 
@@ -87,9 +89,9 @@ fun ForecastResponse.toDomain(
         cityName = cityName,
         latitude = latitude,
         longitude = longitude,
-        currentTemperature = current.temperature,
-        currentWindSpeed = current.windspeed,
-        weatherCode = current.weathercode,
+        currentTemperature = currentTemperature,
+        currentWindSpeed = currentWindSpeed,
+        weatherCode = currentWeatherCode,
         daily = dailyForecast,
         updatedAt = System.currentTimeMillis(),
         source = source

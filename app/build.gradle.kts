@@ -90,8 +90,7 @@ dependencies {
     implementation(libs.google.gson)
 
     implementation(libs.google.play.services.location)
-    implementation(libs.google.play.services.maps)
-    implementation(libs.google.maps.compose)
+    implementation(libs.osmdroid.android)
 
     implementation(libs.jakewharton.timber)
 

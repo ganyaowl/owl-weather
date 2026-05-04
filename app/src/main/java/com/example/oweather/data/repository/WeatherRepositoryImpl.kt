@@ -2,7 +2,6 @@
 
 import com.example.oweather.core.model.ForecastSource
 import com.example.oweather.core.model.WeatherForecast
-import com.example.oweather.data.fallback.FallbackWeatherDataSource
 import com.example.oweather.data.local.dao.WeatherCacheDao
 import com.example.oweather.data.remote.OpenMeteoWeatherApi
 import com.example.oweather.domain.repository.WeatherRepository
@@ -17,13 +16,15 @@ import javax.inject.Singleton
 class WeatherRepositoryImpl @Inject constructor(
     private val weatherApi: OpenMeteoWeatherApi,
     private val weatherCacheDao: WeatherCacheDao,
-    private val fallbackSource: FallbackWeatherDataSource,
     private val gson: Gson
 ) : WeatherRepository {
 
     override fun observeWeather(cityKey: String): Flow<WeatherForecast?> {
         return weatherCacheDao.observeByCityKey(cityKey)
-            .map { entity -> entity?.toDomain(gson) }
+            .map { entity ->
+                entity?.toDomain(gson)
+                    ?.takeUnless { forecast -> forecast.source == ForecastSource.FALLBACK_ASSET }
+            }
     }
 
     override suspend fun refreshWeather(
@@ -45,19 +46,8 @@ class WeatherRepositoryImpl @Inject constructor(
         } catch (networkError: Exception) {
             Timber.w(networkError, "Network weather refresh failed for %s", cityName)
 
-            val fallback = fallbackSource.loadFallbackForecast(
-                cityKey = cityKey,
-                cityName = cityName,
-                latitude = latitude,
-                longitude = longitude
-            )
-
-            if (fallback != null) {
-                weatherCacheDao.upsert(fallback.toCacheEntity(gson))
-                return Result.success(fallback)
-            }
-
             val cached = weatherCacheDao.getByCityKey(cityKey)?.toDomain(gson)
+                ?.takeUnless { forecast -> forecast.source == ForecastSource.FALLBACK_ASSET }
                 ?.copy(source = ForecastSource.CACHE)
 
             if (cached != null) {

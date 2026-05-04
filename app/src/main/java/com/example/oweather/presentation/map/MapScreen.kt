@@ -1,41 +1,33 @@
 ﻿package com.example.oweather.presentation.map
 
 import android.Manifest
-import android.content.Intent
-import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.oweather.R
+import com.example.oweather.core.model.City
 import com.example.oweather.core.util.hasLocationPermission
-import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
-import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.MapProperties
-import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.MarkerState
-import com.google.maps.android.compose.rememberCameraPositionState
+import org.osmdroid.config.Configuration
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.CustomZoomButtonsController
+import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.Marker
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,9 +37,6 @@ fun MapScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
-
-    val mapKey = stringResource(R.string.google_maps_key)
-    val hasMapKey = mapKey.isNotBlank() && !mapKey.contains("ADD_YOUR_MAPS_API_KEY", ignoreCase = true)
 
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -82,79 +71,83 @@ fun MapScreen(
             )
         }
     ) { innerPadding ->
-        if (!hasMapKey) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.maps_setup_title),
-                    style = MaterialTheme.typography.titleLarge
-                )
-                Text(text = stringResource(R.string.maps_setup_message))
-                Button(
-                    onClick = {
-                        val intent = Intent(
-                            Intent.ACTION_VIEW,
-                            Uri.parse("https://developers.google.com/maps/documentation/android-sdk/get-api-key")
-                        )
-                        context.startActivity(intent)
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(stringResource(R.string.open_maps_docs))
-                }
-            }
-            return@Scaffold
-        }
-
-        val firstPosition = when {
-            uiState.currentLocation != null -> LatLng(
-                uiState.currentLocation!!.first,
-                uiState.currentLocation!!.second
-            )
-
-            uiState.cities.isNotEmpty() -> LatLng(
-                uiState.cities.first().latitude,
-                uiState.cities.first().longitude
-            )
-
-            else -> LatLng(41.3111, 69.2797)
-        }
-
-        val cameraState = rememberCameraPositionState()
-
-        LaunchedEffect(firstPosition) {
-            cameraState.animate(CameraUpdateFactory.newLatLngZoom(firstPosition, 9f))
-        }
-
-        GoogleMap(
+        OpenStreetMapView(
+            uiState = uiState,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
-            cameraPositionState = cameraState,
-            properties = MapProperties(
-                isMyLocationEnabled = uiState.permissionGranted
-            )
-        ) {
+                .padding(innerPadding)
+        )
+    }
+}
+
+@Composable
+private fun OpenStreetMapView(
+    uiState: MapUiState,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+
+    Configuration.getInstance().userAgentValue = context.packageName
+
+    val mapView = remember {
+        MapView(context).apply {
+            setTileSource(TileSourceFactory.MAPNIK)
+            setMultiTouchControls(true)
+            zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
+            controller.setZoom(9.0)
+        }
+    }
+
+    DisposableEffect(mapView) {
+        onDispose {
+            mapView.onDetach()
+        }
+    }
+
+    AndroidView(
+        modifier = modifier,
+        factory = { mapView },
+        update = { map ->
+            val center = uiState.centerPoint()
+            map.overlays.clear()
+
             uiState.currentLocation?.let { (lat, lon) ->
-                Marker(
-                    state = MarkerState(position = LatLng(lat, lon)),
-                    title = "Текущее местоположение",
-                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
+                map.overlays.add(
+                    Marker(map).apply {
+                        position = GeoPoint(lat, lon)
+                        title = "Текущее местоположение"
+                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                    }
                 )
             }
 
             uiState.cities.forEach { city ->
-                Marker(
-                    state = MarkerState(position = LatLng(city.latitude, city.longitude)),
-                    title = city.name,
-                    snippet = city.note
-                )
+                map.overlays.add(city.toMarker(map))
             }
+
+            map.controller.setCenter(center)
+            map.invalidate()
         }
+    )
+}
+
+private fun MapUiState.centerPoint(): GeoPoint {
+    currentLocation?.let { (lat, lon) ->
+        return GeoPoint(lat, lon)
+    }
+
+    cities.firstOrNull()?.let { city ->
+        return GeoPoint(city.latitude, city.longitude)
+    }
+
+    return GeoPoint(41.3111, 69.2797)
+}
+
+private fun City.toMarker(map: MapView): Marker {
+    return Marker(map).apply {
+        position = GeoPoint(latitude, longitude)
+        title = name
+        snippet = note
+        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
     }
 }

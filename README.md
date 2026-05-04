@@ -12,7 +12,7 @@ Android-приложение прогноза погоды на Kotlin + Jetpack
 - Network: Retrofit + OkHttp + Gson: выполнено.
 - Local storage: Room + DataStore: выполнено.
 - Location: FusedLocationProviderClient: выполнено.
-- Maps: Google Maps (Maps Compose) + fallback без ключа: выполнено.
+- Maps: OpenStreetMap через osmdroid: выполнено.
 - Weather API: Open-Meteo (без ключа): выполнено.
 
 ### Экраны
@@ -20,7 +20,7 @@ Android-приложение прогноза погоды на Kotlin + Jetpack
 - Main: текущая погода, 7-дневный прогноз, кнопки обновления/города/карта: реализовано.
 - Cities: CRUD, поиск через geocoding, сохранение в Room: реализовано.
 - City details: погода выбранного города: реализовано.
-- Map: текущая позиция + маркеры городов; при отсутствии ключа инструкция: реализовано.
+- Map: текущая позиция + маркеры городов на OpenStreetMap: реализовано.
 - Анимации: fade/scale на Splash, анимированное появление прогноза: реализовано.
 
 ### CRUD (Room)
@@ -31,7 +31,7 @@ Android-приложение прогноза погоды на Kotlin + Jetpack
 ### Offline-first
 - При запуске и просмотре городов читается локальный кэш из Room.
 - После отображения кэша выполняется обновление из сети.
-- При сетевой ошибке используется fallback из `assets/weather_fallback.json`.
+- При сетевой ошибке используется локальный кэш Room, если он уже был сохранен.
 
 ### Permissions
 - `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `INTERNET` в `AndroidManifest.xml`.
@@ -43,7 +43,7 @@ Android-приложение прогноза погоды на Kotlin + Jetpack
 Слои:
 - `presentation`: Compose экраны + ViewModel.
 - `domain`: интерфейсы репозиториев + контракт локации.
-- `data`: Room DAO/entities, Retrofit API, репозитории, DataStore, fallback assets.
+- `data`: Room DAO/entities, Retrofit API, репозитории, DataStore.
 - `di`: Hilt-модули.
 
 Паттерны:
@@ -62,9 +62,9 @@ Android-приложение прогноза погоды на Kotlin + Jetpack
 - DataStore Preferences
 - Coroutines + Flow
 - Fused Location Provider
-- Google Maps Compose
+- OpenStreetMap / osmdroid
 - JSON parsing (Gson)
-- Fallback data from assets
+- Open-Meteo JSON parsing
 
 ## 4. Как запустить
 
@@ -77,17 +77,9 @@ Android-приложение прогноза погоды на Kotlin + Jetpack
    ```
 5. Запустите на эмуляторе/устройстве (Android 13+, `minSdk 33`).
 
-## 5. Куда добавить Google Maps API Key
+## 5. Карта
 
-Файл:
-- `app/src/main/res/values/strings.xml`
-
-Поле:
-- `google_maps_key`
-
-Замените значение `ADD_YOUR_MAPS_API_KEY_HERE` на реальный ключ.
-
-Если ключ не добавлен, экран карты показывает понятную инструкцию и ссылку на docs.
+Карта работает через OpenStreetMap/osmdroid и не требует Google Maps API Key.
 
 ## 6. Важные файлы
 
@@ -98,4 +90,3 @@ Android-приложение прогноза погоды на Kotlin + Jetpack
 - `app/src/main/java/com/example/oweather/presentation/map/MapScreen.kt`
 - `app/src/main/java/com/example/oweather/data/repository/WeatherRepositoryImpl.kt`
 - `app/src/main/java/com/example/oweather/data/local/AppDatabase.kt`
-- `app/src/main/assets/weather_fallback.json`
